@@ -1,6 +1,4 @@
 mergeInto(LibraryManager.library, {
-    hyperbeamInstances: new Array(),
-
     getDemoLink: async function(sourceObject) {
         const caller = UTF8ToString(sourceObject);
         if(window.embedUrl === undefined || window.embedUrl === "") {
@@ -19,6 +17,7 @@ mergeInto(LibraryManager.library, {
             window.embedUrl = body.url;
         }
 
+        console.log("Demo link received, sending to " + caller);
         unityInstance.SendMessage(caller, "OnDemoLink", window.embedUrl);
     },
 
@@ -55,12 +54,11 @@ mergeInto(LibraryManager.library, {
             textureId: null,
             texWidth: 0,
             texHeight: 0,
-            source: null,
-            audioCtx: null,
             controller: controller,
+            keyDownHandler: null,
+            keyUpHandler: null,
         }
 
-        const newId = window.hyperbeamInstances.length;
         hyperbeamInstance.hyperbeamSdk = await window.Hyperbeam(div, url, {
             delegateKeyboard: false,
             frameCb: function (frame) {
@@ -94,33 +92,14 @@ mergeInto(LibraryManager.library, {
 
                 GLctx.texSubImage2D(GLctx.TEXTURE_2D, 0, 0, 0, GLctx.RGBA, GLctx.UNSIGNED_BYTE, frame);
             },
-
-            // audioTrackCb: function(track) {
-            //     const stream = new MediaStream([track]);
-                
-
-            //     source = audioCtx.createMediaStreamSource(stream);
-            //     const UnityAudioNode = new AudioWorkvarNode(
-            //         audioCtx,
-            //         "unity-audio-hook",
-            //         {
-            //             processorOptions: {
-            //                 //unityRef: unityInstance,
-            //                 gameObject: audioObject,
-            //                 sampleRate: audioCtx.sampleRate,
-            //             }
-            //         }
-            //     );
-
-            //     source.connect(UnityAudioNode);
-            // }
         })
 
-        console.log(hyperbeamInstance.hyperbeamSdk);
-        unityInstance.SendMessage(hyperbeamInstance.controller, "HyperbeamCallback");
-        
+        const newId = window.hyperbeamInstances.length;
         window.hyperbeamInstances.push(hyperbeamInstance);
-        return newId;
+
+        console.log("New hyperbeam instance started at id " + newId);
+
+        unityInstance.SendMessage(hyperbeamInstance.controller, "HyperbeamCallback", newId);
     },
 
     destroyInstance: function(instanceId) {
@@ -139,6 +118,7 @@ mergeInto(LibraryManager.library, {
         if(window.hyperbeamInstances === undefined || !window.hyperbeamInstances[instanceId]) { 
             return 0;
         }
+        console.log("getTextureId called");
 
         return window.hyperbeamInstances[instanceId].textureId;
     },
@@ -235,11 +215,26 @@ mergeInto(LibraryManager.library, {
 
         console.log("Control received by hyperbeam on instance: " + instanceId);
         const instance = window.hyperbeamInstances[instanceId]; 
+        
+        if (instance.keyDownHandler || instance.keyUpHandler) {
+            console.log("Hyperbeam already has control");
+            return;
+        }
+        
         const translatedKey = UTF8ToString(closeKey);
 
+        const keyupHandler = (event) => {
+            instance.hyperbeamSdk.sendEvent({
+                type: 'keyup',
+                key: event.key,
+                ctrlKey: event.ctrlKey,
+                metaKey: event.metaKey,
+            });
+        }
+
         const keydownHandler = (event) => {
-            if(event.key === translatedKey 
-                && event.ctrlKey == ctrl 
+            if(event.key === translatedKey
+                && event.ctrlKey == ctrl
                 && event.metaKey == meta
                 && event.shiftKey == shift
                 && event.altKey == alt) {
@@ -257,19 +252,32 @@ mergeInto(LibraryManager.library, {
                 metaKey: event.metaKey,
             });
         }
-
-        const keyupHandler = (event) => {
-            instance.hyperbeamSdk.sendEvent({
-                type: 'keyup',
-                key: event.key,
-                ctrlKey: event.ctrlKey,
-                metaKey: event.metaKey,
-            });
-        }
+        
+        instance.keyDownHandler = keydownHandler;
+        instance.keyUpHandler = keyupHandler;
 
         console.log("Adding handlers...");
         // Name the handlers so they can be removed later
         window.addEventListener('keydown', keydownHandler, {passive: true});
         window.addEventListener('keyup', keyupHandler, {passive: true});
+    },
+    
+    giveUpControl: function(instanceId) {
+        if(window.hyperbeamInstances === undefined || !window.hyperbeamInstances[instanceId]) {
+            console.log("unable to find hyperbeam instance " + instanceId);
+            return;
+        }
+        
+        const instance = window.hyperbeamInstances[instanceId];
+        
+        if (instance.keyUpHandler) {
+            window.removeEventListener('keyup', instance.keyUpHandler, {passive: true});
+            instance.keyUpHandler = null;
+        }
+        
+        if (instance.keyDownHandler) {
+            window.removeEventListener('keydown', instance.keyDownHandler, {passive: true});
+            instance.keyDownHandler = null;
+        }
     }
 })

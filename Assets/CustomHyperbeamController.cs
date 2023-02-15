@@ -1,12 +1,8 @@
 using System;
-using System.Collections;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Hyperbeam;
 using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class CustomHyperbeamController : MonoBehaviour
 {
@@ -34,9 +30,11 @@ public class CustomHyperbeamController : MonoBehaviour
             return;
         }
         
+        _isDisconnected = false;
+
         Debug.Log($"embedUrl: {_embedUrl}");
         controller.StartHyperbeamStream(_embedUrl);
-        _isDisconnected = false;
+        Debug.Log("hyperbeam starting...");
     }
 
     private void Update()
@@ -50,7 +48,8 @@ public class CustomHyperbeamController : MonoBehaviour
         else
         {
             if (distance < disconnectDistance) return;
-            controller.Instance.Dispose();
+            controller.DisposeInstance();
+            Debug.Log("Disposing controller hyperbeam instance...");
             _isDisconnected = true;
         }
     }

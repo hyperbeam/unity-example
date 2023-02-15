@@ -60,8 +60,8 @@ namespace Hyperbeam
 
         public void StartHyperbeamStream(string embedUrl)
         {
+            Debug.Log("Created new hyperbeam instance...");
             Instance = new Hyperbeam(embedUrl, gameObject);
-            StartCoroutine(Instance.GetHyperbeamTexture(OnTextureReady));
         }
 
         void Start()
@@ -72,33 +72,40 @@ namespace Hyperbeam
 
         void OnDestroy()
         {
-            Instance.Dispose();
+            Instance?.Dispose();
         }
 
         void OnDisable()
         {
-            if (Instance != null)
-            {
-                Instance.Volume = 0f;
-                Instance.SetVideoPause(true);
-            }
+            if (Instance == null) return;
+            Instance.Volume = 0f;
+            Instance.SetVideoPause(true);
         }
 
         void OnEnable()
-        { 
-            if (Instance != null)
-            {
-                Instance.Volume = Volume;
-                Instance.SetVideoPause(Paused);
-            } 
+        {
+            if (Instance == null) return;
+            Instance.Volume = Volume;
+            Instance.SetVideoPause(Paused);
+        }
+
+        public void DisposeInstance()
+        {
+            Instance?.Dispose();
+            Instance = null;
         }
 
         /// <summary>
         /// Called by the hyperbeam JSLIB to communicate with unity. Please register an event handler to <see cref="OnHyperbeamStart"/> 
         /// to get notified when hyperbeam has started.
         /// </summary>
-        public void HyperbeamCallback()
+        public void HyperbeamCallback(int id)
         {
+            Instance.InstanceId = id;
+            Debug.Log($"Bound new instance to id: {id}");
+            Debug.Log("Waiting for new texture...");
+            StartCoroutine(Instance.GetHyperbeamTexture(OnTextureReady));
+            
             _volume = Instance.Volume;
             OnHyperbeamStart?.Invoke();
         }
@@ -117,14 +124,14 @@ namespace Hyperbeam
         /// <param name="meta">Whether or not the meta key must be held down to regain control</param>
         public void PassControlToBrowser(string closeKey, bool ctrl, bool meta, bool alt, bool shift)
         {
+            if (Instance == null) return;
+            
 #if !UNITY_EDITOR && UNITY_WEBGL
             WebGLInput.captureAllKeyboardInput = false;
 #endif
-            if(!_hyperbeamControl)
-            {
-                Instance.GiveHyperbeamControl(closeKey, ctrl, meta, alt, shift);
-                _hyperbeamControl = true;
-            }
+            if (_hyperbeamControl) return;
+            Instance.GiveHyperbeamControl(closeKey, ctrl, meta, alt, shift);
+            _hyperbeamControl = true;
         }
 
         /// <summary>
@@ -138,6 +145,15 @@ namespace Hyperbeam
 #endif
             _hyperbeamControl = false;
             OnControlReturned?.Invoke();
+        }
+
+        /// <summary>
+        /// This function will take control back from hyperbeam on the unity side and unregister the keyup and down handler associated with hyperbeam.
+        /// </summary>
+        public void TakeBackControlFromBrowser()
+        {
+            ReceiveControlFromBrowser();
+            Instance.TakeBackControl();
         }
     }
 }

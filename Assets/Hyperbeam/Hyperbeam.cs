@@ -44,29 +44,38 @@ namespace Hyperbeam
 
         [DllImport("__Internal")]
         private static extern void giveHyperbeamControl(int instanceId, string closeKey, bool ctrl, bool meta, bool alt, bool shift);
+
+        [DllImport("__Internal")]
+        private static extern void giveUpControl(int instanceId);
         #endregion
 
-
-        public float minDistance;
-        public float maxDistance;
-
-        private readonly int instanceId;
-        private readonly GameObject controller;
-        private Texture2D instanceTexture;
+        private int _instanceId = -1;
+        private readonly GameObject _controller;
+        private Texture2D _instanceTexture;
 
         private bool _disposed;
 
         public float Volume
         {
-            get {
-                return getVolume(instanceId);
-            }
+            get => getVolume(_instanceId);
+            set => setVolume(_instanceId, value);
+        }
 
+        internal int InstanceId
+        {
+            get => _instanceId;
             set
             {
-                setVolume(instanceId, value);
+                if (_instanceId != -1)
+                {
+                    Debug.Log("ERROR: received new InstanceId after one has already been bound.");
+                    return;
+                }
+
+                _instanceId = value;
             }
         }
+                
 
         /// <summary>
         /// Constructs a new hyperbeam instance using the browsers native WebRTC engine
@@ -75,20 +84,20 @@ namespace Hyperbeam
         /// <param name="controller">A GameObject which has a component descending from the HyperbeamController class</param>
         public Hyperbeam(string embedUrl, GameObject controller)
         {
-            this.controller = controller;
-            instanceId = startHyperbeam(embedUrl, this.controller.name);
+            _controller = controller; 
+            startHyperbeam(embedUrl, this._controller.name);
         }
 
         // Finalizer that tells the jslib to clean up this instance. 
         ~Hyperbeam() => Dispose(false);
 
-        internal IntPtr GetTexturePtr()
+        private IntPtr GetTexturePtr()
         {
-            return new IntPtr(getTextureId(instanceId));
+            return new IntPtr(getTextureId(_instanceId));
         }
 
         /// <summary>
-        ///     A Couroutine to be called with StartCoroutine. This takes a callback that will be invoked when a texture is available. It will check once per frame until it finds one
+        ///     A Coroutine to be called with StartCoroutine. This takes a callback that will be invoked when a texture is available. It will check once per frame until it finds one
         /// </summary>
         /// <remarks>
         /// <example>
@@ -102,7 +111,7 @@ namespace Hyperbeam
         /// 
         ///         void OnTextureReady(Texture2D texture)
         ///         {
-        ///             GetComponent<Renderer>().material.mainTexture = texture;
+        ///             GetComponent&lt;Renderer&gt;().material.mainTexture = texture;
         ///         }
         ///     </code>
         /// </example>
@@ -110,18 +119,20 @@ namespace Hyperbeam
         /// <param name="callback">The callback to be invoked when a texture is ready</param>
         public IEnumerator GetHyperbeamTexture(Action<Texture2D> callback)
         {
-            if(instanceTexture == null)
+            if(_instanceTexture == null)
             {
                 var texturePtr = GetTexturePtr();
-                while (texturePtr == null || texturePtr.ToInt32() == 0)
+                while (texturePtr.ToInt32() == 0)
                 {
                     yield return null;
                     texturePtr = GetTexturePtr();
                 }
-                instanceTexture = Texture2D.CreateExternalTexture(GetTextureWidth(), GetTextureHeight(), TextureFormat.RGBA32, false, false, texturePtr);
+                Debug.Log("New texture found!");
+                _instanceTexture = Texture2D.CreateExternalTexture(GetTextureWidth(), GetTextureHeight(), TextureFormat.RGBA32, false, false, texturePtr);
             }
 
-            callback?.Invoke(instanceTexture);
+            Debug.Log("Invoking OnTexture listeners");
+            callback?.Invoke(_instanceTexture);
         }
 
         public void Dispose()
@@ -136,38 +147,20 @@ namespace Hyperbeam
             {
                 return;
             }
-            destroyInstance(instanceId);
+            destroyInstance(_instanceId);
 
             _disposed = true;
         }
 
         public int GetTextureWidth()
         {
-            return getTextureWidth(instanceId);
+            return getTextureWidth(_instanceId);
         }
 
         public int GetTextureHeight()
         {
-            return getTextureHeight(instanceId);
+            return getTextureHeight(_instanceId);
         }
-
-        //public void ApplyVolumeFalloff()
-        //{
-        //    float distance = Vector3.Distance(audioDst.transform.position, audioListener.transform.position);
-        //    if (distance < minDistance)
-        //    {
-        //        setVolume(instanceId, 1.0f * Volume);
-        //    }
-        //    else if (distance > maxDistance)
-        //    {
-        //        setVolume(instanceId, 0f);
-        //    }
-        //    else
-        //    {
-        //        setVolume(instanceId, (1.0f / (float)Math.Pow((distance - minDistance), 2.0f)) * Volume);
-        //    }
-        //}
-
 
         /// <summary>
         /// Sends a keydown event to the connected hyperbeam instance
@@ -177,7 +170,7 @@ namespace Hyperbeam
         /// <param name="Meta">Is the met key held down</param>
         public void SendKeyDown(char Key, bool Ctrl, bool Meta)
         {
-            sendKeyEvent(instanceId, "keydown", FixControlKeys(Key), Ctrl, Meta);
+            sendKeyEvent(_instanceId, "keydown", FixControlKeys(Key), Ctrl, Meta);
         }
 
         /// <summary>
@@ -188,7 +181,7 @@ namespace Hyperbeam
         /// <param name="Meta">Is the met key held down</param>
         public void SendKeyUp(char Key, bool Ctrl, bool Meta)
         {
-            sendKeyEvent(instanceId, "keyup", FixControlKeys(Key), Ctrl, Meta);
+            sendKeyEvent(_instanceId, "keyup", FixControlKeys(Key), Ctrl, Meta);
         }
 
 
@@ -200,7 +193,7 @@ namespace Hyperbeam
         /// <param name="button">The button of the mousedown event</param>
         public void SendMouseDown(float X, float Y,  PointerEventData.InputButton button)
         {
-            sendMouseEvent(instanceId, "mousedown", X, Y, GetIntFromButtons(button));
+            sendMouseEvent(_instanceId, "mousedown", X, Y, GetIntFromButtons(button));
         }
 
 
@@ -212,7 +205,7 @@ namespace Hyperbeam
         /// <param name="button">The button of the mouseup event</param>
         public void SendMouseUp(float X, float Y, PointerEventData.InputButton button)
         {
-            sendMouseEvent(instanceId, "mouseup", X, Y, GetIntFromButtons(button));
+            sendMouseEvent(_instanceId, "mouseup", X, Y, GetIntFromButtons(button));
         }
 
         /// <summary>
@@ -222,7 +215,7 @@ namespace Hyperbeam
         /// <param name="Y">The y coordinate of the mousemove event normalized to be between [0, 1] where 0 is the top of the browser</param>
         public void SendMouseMove(float X, float Y)
         {
-            sendMouseEvent(instanceId, "mousemove", X, Y, 0);
+            sendMouseEvent(_instanceId, "mousemove", X, Y, 0);
         }
 
         /// <summary>
@@ -231,7 +224,7 @@ namespace Hyperbeam
         /// <param name="DeltaY">The direction of the mousewheel 1 is up -1 is down</param>
         public void SendWheel(float DeltaY)
         {
-            sendWheelEvent(instanceId, DeltaY);
+            sendWheelEvent(_instanceId, DeltaY);
         }
 
 
@@ -241,7 +234,7 @@ namespace Hyperbeam
         /// <param name="pause">Whether to pause or not</param>
         public void SetVideoPause(bool pause)
         {
-            setPause(instanceId, pause);
+            setPause(_instanceId, pause);
         }
 
         /// <summary>
@@ -258,7 +251,12 @@ namespace Hyperbeam
         /// <param name="shift">should the shift key be held to return control</param>
         public void GiveHyperbeamControl(string closeKey, bool ctrl, bool meta, bool alt, bool shift)
         {
-            giveHyperbeamControl(instanceId, closeKey, ctrl, meta, alt, shift);
+            giveHyperbeamControl(_instanceId, closeKey, ctrl, meta, alt, shift);
+        }
+
+        public void TakeBackControl()
+        {
+            giveUpControl(_instanceId);
         }
 
         // This fixes the button codes for hyperbeam specifically.

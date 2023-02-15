@@ -56,4 +56,9 @@ public class ScreenController : MonoBehaviour, IPointerMoveHandler, IPointerDown
 
         return new Vector2((localPoint.x / pos.rect.width) + .5f, (localPoint.y / pos.rect.height) + .5f);
     }
+
+    public void OnCloseUI()
+    {
+        Controller.TakeBackControlFromBrowser();
+    }
 }
