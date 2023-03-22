@@ -128,10 +128,10 @@ public class FirstPersonController : MonoBehaviour
             return;
 
         var lookInput = ctx.ReadValue<Vector2>();
-        xRotation -= lookInput.y * mouseSensitivity * Time.deltaTime;
+        xRotation -= lookInput.y * mouseSensitivity;
         xRotation = Mathf.Clamp(xRotation, -80f, 90f);
         PlayerCam.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        gameObject.transform.Rotate(Vector3.up, lookInput.x * mouseSensitivity * Time.deltaTime);
+        gameObject.transform.Rotate(Vector3.up, lookInput.x * mouseSensitivity);
     }
 
     public void OnFire()

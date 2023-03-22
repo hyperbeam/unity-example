@@ -9,6 +9,7 @@ using UnityEngine.UI;
 public class ScreenController : MonoBehaviour, IPointerMoveHandler, IPointerDownHandler, IPointerUpHandler, IScrollHandler
 {
     public HyperbeamController Controller;
+    public float ScrollSpeed;
     private RectTransform pos;
 
     [SerializeField]
@@ -34,7 +35,7 @@ public class ScreenController : MonoBehaviour, IPointerMoveHandler, IPointerDown
 
     public void OnScroll(PointerEventData eventData)
     {
-        Controller.Instance.SendWheel(-eventData.scrollDelta.y);
+        Controller.Instance.SendWheel(-eventData.scrollDelta.y * ScrollSpeed);
     }
 
     void OnEnable()

@@ -14,9 +14,9 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  m_FogMode: 3
+  m_Fog: 1
+  m_FogColor: {r: 0.41960785, g: 0.47843137, b: 0.627451, a: 1}
+  m_FogMode: 1
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 85cf0b004bc4a654b9e501efcce47902, type: 2}
+  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.49410856, g: 0.6333019, b: 0.7215666, a: 1}
+  m_IndirectSpecularColor: {r: 0.43990412, g: 0.48836637, b: 0.56857044, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1044,6 +1044,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Controller: {fileID: 1577749886}
+  ScrollSpeed: 10
   rawImage: {fileID: 916182952}
 --- !u!114 &916182952
 MonoBehaviour:
@@ -1226,7 +1227,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: de15d352deddf184697eb85d9abf1130, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1374,10 +1375,10 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 64
-  mouseSensitivity: 40
+  mouseSensitivity: 0.4
   movementSpeed: 6
   gravity: -9.81
-  interactionDistance: 3.5
+  interactionDistance: 5
   interactionCenter: {fileID: 1221168334}
   interactionPrompt: {fileID: 963478681}
 --- !u!136 &1221168331

@@ -6,6 +6,9 @@ using UnityEngine.EventSystems;
 
 namespace Hyperbeam
 {
+    /// <summary>
+    /// This is the C# object for the Hyperbeam API. This contains all supported methods, but does not implement 
+    /// </summary>
     public class Hyperbeam : IDisposable
     {
         #region external functions
@@ -99,7 +102,6 @@ namespace Hyperbeam
         /// <summary>
         ///     A Coroutine to be called with StartCoroutine. This takes a callback that will be invoked when a texture is available. It will check once per frame until it finds one
         /// </summary>
-        /// <remarks>
         /// <example>
         ///     <code>
         ///         private Hyperbeam hbeam;
@@ -115,7 +117,6 @@ namespace Hyperbeam
         ///         }
         ///     </code>
         /// </example>
-        /// </remarks>
         /// <param name="callback">The callback to be invoked when a texture is ready</param>
         public IEnumerator GetHyperbeamTexture(Action<Texture2D> callback)
         {
@@ -152,11 +153,19 @@ namespace Hyperbeam
             _disposed = true;
         }
 
+        /// <summary>
+        /// Gets the width of the texture that the hyperbeam stream will write to in pixels
+        /// </summary>
+        /// <returns>The width of the hyperbeam texture in pixels</returns>
         public int GetTextureWidth()
         {
             return getTextureWidth(_instanceId);
         }
 
+        /// <summary>
+        /// Gets the height of the texture that the hyperbeam stream will write to in pixels
+        /// </summary>
+        /// <returns>The height of the hyperbeam texture in pixels</returns>
         public int GetTextureHeight()
         {
             return getTextureHeight(_instanceId);
@@ -254,6 +263,10 @@ namespace Hyperbeam
             giveHyperbeamControl(_instanceId, closeKey, ctrl, meta, alt, shift);
         }
 
+        /// <summary>
+        /// This method can be called to forcefully unregister any event handlers that was previously registered by the Hyperbeam object.
+        /// This results in hyperbeam no longer intercepting keystrokes, but it does not take care of setting: <c>WebGLInput.captureAllKeyboardInput = true</c>
+        /// </summary>
         public void TakeBackControl()
         {
             giveUpControl(_instanceId);

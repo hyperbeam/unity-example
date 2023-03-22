@@ -12,6 +12,9 @@ namespace Hyperbeam
     // so please don't
     public sealed class HyperbeamController : MonoBehaviour 
     {
+        /// <summary>
+        /// The accessor for the underlying Hyperbeam object.
+        /// </summary>
         public Hyperbeam Instance;
 
         /// <summary>
@@ -31,6 +34,10 @@ namespace Hyperbeam
 
         private bool _hyperbeamControl = false;
         private float _volume = 0f;
+        
+        /// <summary>
+        /// Volume of the hyperbeam instance in the range [0, 1]
+        /// </summary>
         public float Volume
         {
             get
@@ -45,6 +52,10 @@ namespace Hyperbeam
         }
 
         private bool _isPaused = false;
+        
+        /// <summary>
+        /// Setting this to true will pause the video stream, but the audio stream will remain playing.
+        /// </summary>
         public bool Paused
         {
             get
@@ -58,31 +69,45 @@ namespace Hyperbeam
             }
         }
 
+        /// <summary>
+        ///     <para>
+        ///         The entrypoint for the hyperbeam instance to be started. This will interface with the web browser to inject a hyperbeam stream into unity.
+        ///         This function is required to be called first for any other functions to have an effect.
+        ///     </para>
+        ///     <para>
+        ///         When the HyperbeamController GameObject is disabled, the stream is simply paused and muted. This reduces bandwidth drastically, but keeps resources allocated.
+        ///         If a disabled stream is re-enabled, the previous settings will be restored.
+        ///     </para>
+        ///     <para>
+        ///         When a game object is fully disposed, either automatically, or by calling Dispose, the stream will be fully torn down and all resources will be released.
+        ///     </para>
+        /// </summary>
+        /// <param name="embedUrl">A URL provided by the hyperbeam API. See <a href="https://docs.hyperbeam.com/home/getting-started">here</a> for information on how to generate one.</param>
         public void StartHyperbeamStream(string embedUrl)
         {
-            Debug.Log("Created new hyperbeam instance...");
+            // Debug.Log("Created new hyperbeam instance...");
             Instance = new Hyperbeam(embedUrl, gameObject);
         }
 
-        void Start()
+        private void Start()
         {
-            OnControlReturned ??= new();
-            OnHyperbeamStart ??= new();
+            OnControlReturned ??= new UnityEvent();
+            OnHyperbeamStart ??= new UnityEvent();
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             Instance?.Dispose();
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             if (Instance == null) return;
             Instance.Volume = 0f;
             Instance.SetVideoPause(true);
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             if (Instance == null) return;
             Instance.Volume = Volume;
@@ -102,8 +127,8 @@ namespace Hyperbeam
         public void HyperbeamCallback(int id)
         {
             Instance.InstanceId = id;
-            Debug.Log($"Bound new instance to id: {id}");
-            Debug.Log("Waiting for new texture...");
+            // Debug.Log($"Bound new instance to id: {id}");
+            // Debug.Log("Waiting for new texture...");
             StartCoroutine(Instance.GetHyperbeamTexture(OnTextureReady));
             
             _volume = Instance.Volume;
@@ -122,6 +147,8 @@ namespace Hyperbeam
         /// <param name="closeKey">The Keydown that will trigger unity regaining control</param>
         /// <param name="ctrl">Whether or not the ctrl key must be held down to regain control</param>
         /// <param name="meta">Whether or not the meta key must be held down to regain control</param>
+        /// <param name="alt">Whether or not the alt key must be held down to regain control</param>
+        /// <param name="shift">Whether or not the shift key must be held down to regain control</param>
         public void PassControlToBrowser(string closeKey, bool ctrl, bool meta, bool alt, bool shift)
         {
             if (Instance == null) return;
